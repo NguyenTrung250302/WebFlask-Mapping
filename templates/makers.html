@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Makers</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+  </head>
+  <body>
+    <div class="container">
+      <h1>Danh sách địa điểm được đánh dấu</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Tên địa điểm</th>
+            <th>Thông tin thêm</th>
+            <th>Kinh độ</th>
+            <th>Vĩ độ</th>
+            <th>tùy chỉnh</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for maker in markers %}
+          <tr id="marker-{{ maker.id }}">
+            <!-- Thêm ID cho dễ xác định -->
+            <td>{{ maker.id }}</td>
+            <td>{{ maker.name }}</td>
+            <td>{{ maker.info }}</td>
+            <td>{{ maker.lat }}</td>
+            <td>{{ maker.lon }}</td>
+            <td>
+              <button onclick="deleteMarker({{ maker.id }})">Xóa</button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      function deleteMarker(id) {
+        fetch(`/delete_marker/${id}`, {
+          method: "DELETE",
+        })
+          .then((response) => {
+            if (response.ok) {
+              // Xóa marker khỏi giao diện người dùng
+              document.getElementById(`marker-${id}`).remove();
+            } else {
+              console.error("Lỗi khi xóa marker:", response.statusText);
+            }
+          })
+          .catch((error) => console.error("Lỗi mạng:", error));
+      }
+    </script>
+  </body>
+</html>

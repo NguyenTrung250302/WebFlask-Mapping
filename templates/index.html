@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mapping-Flask</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  </head>
+  <body>
+    <header>
+      <div class="header-container">
+        <h1>Web Mapping with Flask</h1>
+        <nav>
+          <ul>
+            <li><a href="/">Map chính</a></li>
+            <li><a href="/markers">Điểm đánh dấu</a></li>
+            <!-- Nút điều hướng mới -->
+            <li><a href="#">Về chúng tôi</a></li>
+            <li><a href="#">Liên hệ</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    <div class="container">
+      <h3>Hoàng Sa - Trường Sa là của Việt Nam &#9733;</h3>
+      <div class="content">
+        <div id="map"></div>
+
+        <div class="form-container">
+          <form id="search-form" class="form">
+            <h2>Tìm kiếm</h2>
+            <div class="form-group">
+              <label for="query">vị trí:</label>
+              <input type="text" id="query" name="query" required />
+            </div>
+            <button type="submit">Search</button>
+          </form>
+
+          <form id="marker-form" class="form">
+            <h2>Thêm địa điểm yêu thích</h2>
+            <div class="form-group">
+              <label for="name">Tên địa điểm:</label>
+              <input type="text" id="name" name="name" required />
+            </div>
+            <div class="form-group">
+              <label for="lat">Kinh độ:</label>
+              <input type="text" id="lat" name="lat" required />
+            </div>
+            <div class="form-group">
+              <label for="lon">Vĩ Độ:</label>
+              <input type="text" id="lon" name="lon" required />
+            </div>
+            <div class="form-group">
+              <label for="info">Thông tin thêm:</label>
+              <input type="text" id="info" name="info" required />
+            </div>
+            <button type="submit">Thêm địa điểm</button>
+          </form>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <div class="footer-container">
+        <p>&copy; 2024 Web Mapping with Flask. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script>
+      var map = L.map("map").setView([21.0285, 105.8542], 10);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+
+      fetch("/markers")
+        .then((response) => response.json())
+        .then((data) => {
+          data.forEach((marker) => {
+            L.marker([marker.lat, marker.lon])
+              .addTo(map)
+              .bindPopup(`<b>${marker.name}</b><br>${marker.info}`)
+              .openPopup();
+          });
+        });
+
+      document
+        .getElementById("marker-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          var name = document.getElementById("name").value;
+          var lat = document.getElementById("lat").value;
+          var lon = document.getElementById("lon").value;
+          var info = document.getElementById("info").value;
+
+          fetch("/add_marker", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: name,
+              lat: lat,
+              lon: lon,
+              info: info,
+            }),
+          })
+            .then((response) => response.json())
+            .then((marker) => {
+              L.marker([marker.lat, marker.lon])
+                .addTo(map)
+                .bindPopup(`<b>${marker.name}</b><br>${marker.info}`)
+                .openPopup();
+            });
+
+          // Reset form fields
+          document.getElementById("name").value = "";
+          document.getElementById("lat").value = "";
+          document.getElementById("lon").value = "";
+          document.getElementById("info").value = "";
+        });
+
+      document
+        .getElementById("search-form")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          var query = document.getElementById("query").value;
+
+          fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${query}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.length > 0) {
+                var firstResult = data[0];
+                var lat = firstResult.lat;
+                var lon = firstResult.lon;
+                map.setView([lat, lon], 13);
+                L.marker([lat, lon])
+                  .addTo(map)
+                  .bindPopup(`<b>${firstResult.display_name}</b>`)
+                  .openPopup();
+              } else {
+                alert("Location not found");
+              }
+            });
+        });
+    </script>
+  </body>
+</html>
